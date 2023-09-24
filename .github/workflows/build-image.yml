@@ -9,6 +9,16 @@ on:
         default: false
         required: false
         type: boolean
+      config_path:
+        description: Location of the config file
+        default: config.yaml
+        required: false
+        type: string
+      build_path:
+        description: Location of the build file
+        default: build.yaml
+        required: false
+        type: string
 
 jobs:
   information:
@@ -26,12 +36,15 @@ jobs:
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.0.0
+        with:
+          sparse-checkout: ${{ inputs.build_path }}
+          sparse-checkout-cone-mode: false
 
       - name: ℹ️ Compose build flags
         id: flags
         run: |
           echo "date=$(date +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
-          from=$(yq --no-colors eval ".build_from.${{ matrix.architecture }}" "./build.yaml")
+          from=$(yq --no-colors eval ".build_from.${{ matrix.architecture }}" "${{ inputs.build_path }}")
           echo "from=${from}" >> "$GITHUB_OUTPUT"
 
           if [[ "${{ matrix.architecture }}" = "amd64" || "${{ matrix.architecture }}" = "x86_64" ]]; then

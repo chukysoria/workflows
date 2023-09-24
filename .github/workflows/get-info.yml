@@ -46,7 +46,10 @@ jobs:
       version: ${{ steps.release.outputs.version }}
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.0
+        with:
+          sparse-checkout: ${{ inputs.config_path }}
+          sparse-checkout-cone-mode: false
 
       - name: ℹ️ Extract basic image information
         shell: bash
