@@ -1,0 +1,198 @@
+name: build-image
+run-name: Building image of ${{ github.repository }}
+
+on:
+  workflow_call: 
+    inputs:
+      tag-external-version:
+        description: Include tag for the external version of the app
+        default: false
+        required: false
+        type: boolean
+
+jobs:
+  information:
+    uses: chukysoria/workflows/.github/workflows/get-info.yml@main
+
+  build:
+    name: 👷 Build & Deploy ${{ needs.information.outputs.image}} - ${{ matrix.architecture }}
+    needs: information
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: ${{ fromJson(needs.information.outputs.architectures) }}
+    outputs:
+      build_date: ${{ steps.flags.outputs.date }}
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.0.0
+
+      - name: ℹ️ Compose build flags
+        id: flags
+        run: |
+          echo "date=$(date +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+          from=$(yq --no-colors eval ".build_from.${{ matrix.architecture }}" "./build.yaml")
+          echo "from=${from}" >> "$GITHUB_OUTPUT"
+
+          if [[ "${{ matrix.architecture }}" = "amd64" || "${{ matrix.architecture }}" = "x86_64" ]]; then
+            echo "platform=linux/amd64" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ matrix.architecture }}" = "i386" ]]; then
+            echo "platform=linux/386" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ matrix.architecture }}" = "armhf" ]]; then
+            echo "platform=linux/arm/v6" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ matrix.architecture }}" = "armv7" ]]; then
+            echo "platform=linux/arm/v7" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ matrix.architecture }}" = "aarch64" ]]; then
+            echo "platform=linux/arm64/v8" >> "$GITHUB_OUTPUT"
+          else
+            echo "**Error**: Could not determine platform for architecture ${{ matrix.architecture }}" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: 🏗 Restore build cache
+        id: cache
+        uses: actions/cache/restore@v3.3.2
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ matrix.architecture }}-${{ github.sha }}
+          restore-keys: |
+            docker-${{ matrix.architecture }}   
+
+      - name: 🏗 Set up QEMU
+        uses: docker/setup-qemu-action@v3.0.0
+
+      - name: 🏗 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+        with:
+          platforms: ${{ steps.flags.outputs.platform }}
+
+      - name: 🏗 Login to Github Container Repo
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Calculate image labels and tags
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+             ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}            
+          # generate Docker tags based on the following events/attributes
+          flavor:
+            prefix=${{ matrix.architecture }}-
+          tags: |
+            type=sha,prefix=${{ matrix.architecture }}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ needs.information.outputs.ext_release_clean }},enable${{ inputs.tag-external-version }}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=semver,pattern=v{{version}},prefix=${{ matrix.architecture }}-
+            type=semver,pattern=v{{version}},prefix=${{ matrix.architecture }}-${{ needs.information.outputs.ext_release_clean }}-,enable${{ inputs.tag-external-version }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.flags.outputs.date }}
+            org.opencontainers.image.authors=Chukysoria
+            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ github.repository }}/packages
+            org.opencontainers.image.documentation=https://docs.linuxserver.io/images/docker-${{ needs.information.outputs.image }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.information.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.vendor=Chukysoria
+            org.opencontainers.image.licenses=GPL-3.0-only
+            org.opencontainers.image.ref.name=${{ github.sha }}
+            org.opencontainers.image.title=${{ needs.information.outputs.name }}
+            org.opencontainers.image.description=${{ needs.information.outputs.description }} 
+
+      - name: 🚀 Build and push
+        id: build-and-push
+        uses: docker/build-push-action@v5.0.0
+        with:
+          # Not possible to load and push at the same time
+          push: ${{ github.event_name == 'release' }}
+          load: ${{ github.event_name != 'release' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=local,src=/tmp/.docker-cache
+            ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}
+          cache-to: type=local,mode=max,dest=/tmp/.docker-cache-new          
+          platforms: ${{ steps.flags.outputs.platform }}
+          provenance: false
+          build-args: |
+            BUILD_ARCH=${{ matrix.architecture }}
+            BUILD_DATE=${{ steps.flags.outputs.date }}
+            BUILD_EXT_RELEASE=${{ needs.information.outputs.ext_release }}
+            BUILD_FROM=${{ steps.flags.outputs.from }}
+            BUILD_VERSION=${{ needs.information.outputs.version }}
+
+      # This ugly bit is necessary, or our cache will grow forever...
+      # Well until we hit GitHub's limit of 5GB :)
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      - name: 🚚 Swap build cache
+        if: ${{ github.event_name != 'release' }}
+        run: |
+          rm -rf /tmp/.docker-cache
+          mv /tmp/.docker-cache-new /tmp/.docker-cache
+
+      - name: 🏗 Save build cache
+        # On release push no cache is created
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/cache/save@v3.3.2
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ matrix.architecture }}-${{ github.sha }}
+
+  publish:
+    name: 👷 Publish ${{ needs.information.outputs.image}} manifest
+    runs-on: ubuntu-latest
+    needs:
+      - information
+      - build
+    if: ${{ github.event_name == 'release' }}
+    steps:
+      - name: 🏗 Login to Github Container Repo
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Calculate manifest image labels and tags
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+             ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}            
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ needs.information.outputs.ext_release_clean }},enable=${{ inputs.tag-external-version }}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=semver,pattern=v{{version}},prefix=${{ needs.information.outputs.ext_release_clean }}-,enable=${{ inputs.tag-external-version }}
+      
+      - name: ℹ️ Calculate short SHA
+        uses: benjlevesque/short-sha@v2.2
+        id: short-sha 
+           
+      - name: 🚀 Calculate source images and output tags
+        id: source
+        run: |
+          images=$(echo '${{ needs.information.outputs.architectures }}' | jq -c -r 'map("ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}:\(.)-${{ steps.short-sha.outputs.sha }}") |  join(",")')
+          echo "images=$images" >> $GITHUB_OUTPUT
+          tags=$(echo '${{ steps.meta.outputs.tags }}' | paste -sd,)
+          echo "tags=$tags" >> $GITHUB_OUTPUT
+
+      - name: 🚀 Create and push manifest images
+        uses: Noelware/docker-manifest-action@0.4.0
+        with:
+            inputs: ${{ steps.source.outputs.tags }}
+            images: ${{ steps.source.outputs.images }}
+            push: true
