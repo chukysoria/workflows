@@ -25,7 +25,7 @@ jobs:
     uses: chukysoria/workflows/.github/workflows/get-info.yml@main
 
   build:
-    name: 👷 Build & Deploy ${{ needs.information.outputs.image}} - ${{ matrix.architecture }}
+    name: 👷 Build ${{ needs.information.outputs.image}} - ${{ matrix.architecture }}
     needs: information
     runs-on: ubuntu-latest
     strategy:
