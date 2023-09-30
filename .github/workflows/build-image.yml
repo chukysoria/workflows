@@ -108,9 +108,9 @@ jobs:
           labels: |
             org.opencontainers.image.created=${{ steps.flags.outputs.date }}
             org.opencontainers.image.authors=Chukysoria
-            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ github.repository }}/packages
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}/packages
             org.opencontainers.image.documentation=https://docs.linuxserver.io/images/docker-${{ needs.information.outputs.image }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.information.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.vendor=Chukysoria
