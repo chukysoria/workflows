@@ -99,12 +99,10 @@ jobs:
           tags: |
             type=sha,prefix=${{ matrix.architecture }}-
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ needs.information.outputs.ext_release_clean }},enable=${{ inputs.tag-external-version }}
             type=semver,pattern=v{{version}}
             type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
             type=semver,pattern=v{{major}}.{{minor}}
             type=semver,pattern=v{{version}},prefix=${{ matrix.architecture }}-
-            type=semver,pattern=v{{version}},prefix=${{ matrix.architecture }}-${{ needs.information.outputs.ext_release_clean }}-,enable=${{ inputs.tag-external-version }}
           labels: |
             org.opencontainers.image.created=${{ steps.flags.outputs.date }}
             org.opencontainers.image.authors=Chukysoria
@@ -185,11 +183,9 @@ jobs:
           tags: |
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ needs.information.outputs.ext_release_clean }},enable=${{ inputs.tag-external-version }}
             type=semver,pattern=v{{version}}
             type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
             type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{version}},prefix=${{ needs.information.outputs.ext_release_clean }}-,enable=${{ inputs.tag-external-version }}
       
       - name: ℹ️ Calculate short SHA
         uses: benjlevesque/short-sha@v2.2
