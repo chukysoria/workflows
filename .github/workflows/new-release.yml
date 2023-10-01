@@ -10,8 +10,6 @@ on:
 jobs:
   bump:
     runs-on: ubuntu-latest
-    env:
-      APP: myapp
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.1.0
