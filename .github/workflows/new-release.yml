@@ -1,29 +1,43 @@
-name: 'myrelease'
-on:
-  workflow_call: 
-    inputs:
-      publish:
-        default: false
-        type: boolean
-        required: false
-        description: Publish Release
-      prerelease:
-        default: true
-        type: boolean
-        required: false
-        description: Create a Pre-release
+---
+  name: Release Drafter
+  
+  on:
+    workflow_call:
+      inputs:
+        publish:
+          default: false
+          description: Publish Release
+          required: false
+          type: boolean
+  
+  jobs:
+    update_release_draft:
+      name: ✏️ Draft release
+      runs-on: ubuntu-latest
+      steps:
+        - name: ⤵️ Check out code from GitHub
+          uses: actions/checkout@v4.1.0
 
-jobs:
-  bump:
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.1.0
+        - name: 🚀 Run Release Drafter
+          uses: release-drafter/release-drafter@v5.24.0
+          id: drafter
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            publish: ${{ inputs.publish }}
 
-      - name: Create Release
-        uses: minddocdev/mou-release-action@master
-        with:
-          templatePath: RELEASE_DRAFT/default.md
-          prerelease: ${{ inputs.prerelease }}
-          draft: ${{ !inputs.publish }}
-          token: ${{ github.token }}
+        - name: Update version  
+          if: ${{ !inputs.publish }}
+          run: |
+            sed -i "s/^version: .*/version: ${{ steps.drafter.outputs.tag_name }}/" "config.yaml"
+
+        - name: Create Pull Request
+          uses: peter-evans/create-pull-request@v5
+          if: ${{ !inputs.publish }}
+          with:
+            branch: releases/new-release
+            delete-branch: true
+            title: Bump to version ${{ steps.drafter.outputs.tag_name }}
+            assignees: ${{ github.repository_owner }}
+            add-paths: |
+              config.yaml
