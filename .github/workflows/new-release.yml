@@ -1,0 +1,18 @@
+name: 'myrelease'
+on:
+  workflow_call: 
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    env:
+      APP: myapp
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.1.0
+
+      - name: Create Release
+        uses: minddocdev/mou-release-action@master
+        with:
+          templatePath: RELEASE_DRAFT/default.md
+          token: ${{ github.token }}
