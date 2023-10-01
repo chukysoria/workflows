@@ -6,6 +6,12 @@ on:
         default: false
         type: boolean
         required: false
+        description: Publish Release
+      prerelease:
+        default: true
+        type: boolean
+        required: false
+        description: Create a Pre-release
 
 jobs:
   bump:
@@ -18,5 +24,6 @@ jobs:
         uses: minddocdev/mou-release-action@master
         with:
           templatePath: RELEASE_DRAFT/default.md
-          prerelease: ${{ inputs.publish }}
+          prerelease: ${{ inputs.prerelease }}
+          draft: ${{ !inputs.publish }}
           token: ${{ github.token }}
