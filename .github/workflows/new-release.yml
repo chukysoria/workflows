@@ -40,7 +40,7 @@
             publish: ${{ steps.publish.outputs.publish }}
     
         - name: Update version
-          if: ${{ steps.publish.outputs.publish=="false" }}
+          if: ${{ steps.publish.outputs.publish==false }}
           run: |
             sed -i "s/^version: .*/version: ${{ steps.drafter.outputs.tag_name }}/" "config.yaml"
 
