@@ -46,7 +46,7 @@
 
         - name: Create Pull Request
           uses: peter-evans/create-pull-request@v5.0.0
-          if: !steps.publish.outputs.publish
+          if: steps.publish.outputs.publish == 'false'
           with:
             branch: releases/new-release
             delete-branch: true
