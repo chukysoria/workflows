@@ -3,41 +3,59 @@
   
   on:
     workflow_call:
-      inputs:
-        publish:
-          default: false
-          description: Publish Release
-          required: false
-          type: boolean
   
   jobs:
     update_release_draft:
       name: ✏️ Draft release
       runs-on: ubuntu-latest
+      outputs:
+        publish: ${{ steps.publish.outputs.publish }}
+      permissions:
+        contents: write  # for release-drafter/release-drafter to create a github release
+        pull-requests: write  # for release-drafter/release-drafter to read PR content and labels
       steps:
         - name: ⤵️ Check out code from GitHub
           uses: actions/checkout@v4.1.0
+          with:
+            fetch-depth: 2
 
+        - uses: salsify/action-detect-and-tag-new-version@v2
+          id: version
+          with:
+            create-tag: false
+            version-command: |
+              yq e '.version' "config.yaml"
+
+        - name: Inform publish
+          id: publish
+          run: |
+            echo "publish=${{ steps.version.outputs.previous-version != steps.version.outputs.current-version}}" >> $GITHUB_OUTPUTS
+        
         - name: 🚀 Run Release Drafter
           uses: release-drafter/release-drafter@v5.24.0
           id: drafter
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
-            publish: ${{ inputs.publish }}
-
+            publish: ${{ steps.publish.outputs.publish }}
+    
+    create-pr:
+      name: Create upgrade version pr
+      runs-on: ubuntu-latest
+      needs: update_release_draft
+      if: ${{ !needs.update_release_draft.outputs.publish }}
+      steps:
         - name: Update version  
-          if: ${{ !inputs.publish }}
           run: |
             sed -i "s/^version: .*/version: ${{ steps.drafter.outputs.tag_name }}/" "config.yaml"
 
         - name: Create Pull Request
           uses: peter-evans/create-pull-request@v5
-          if: ${{ !inputs.publish }}
           with:
             branch: releases/new-release
             delete-branch: true
             title: Bump to version ${{ steps.drafter.outputs.tag_name }}
             assignees: ${{ github.repository_owner }}
+            labels: ci
             add-paths: |
               config.yaml
