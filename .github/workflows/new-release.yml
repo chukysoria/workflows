@@ -38,9 +38,12 @@
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             publish: ${{ steps.publish.outputs.publish }}
-    
+        
+        - name: Checkout config
+          uses: actions/checkout@v4.1.0
+          
         - name: Update version
-          if: steps.publish.outputs.publish
+          if: steps.publish.outputs.publish == 'false'
           run: |
             sed -i "s/^version: .*/version: ${{ steps.drafter.outputs.tag_name }}/" "config.yaml"
 
