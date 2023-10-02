@@ -29,7 +29,7 @@
         - name: Inform publish
           id: publish
           run: |
-            echo "publish=${{ steps.version.outputs.previous-version != steps.version.outputs.current-version}}" >> $GITHUB_OUTPUTS
+            echo "publish=${{ steps.version.outputs.previous-version != steps.version.outputs.current-version}}" >> $GITHUB_OUTPUT
         
         - name: 🚀 Run Release Drafter
           uses: release-drafter/release-drafter@v5.24.0
