@@ -40,13 +40,13 @@
             publish: ${{ steps.publish.outputs.publish }}
     
         - name: Update version
-          if: ${{ steps.publish.outputs.publish==false }}
+          if: !steps.publish.outputs.publish
           run: |
             sed -i "s/^version: .*/version: ${{ steps.drafter.outputs.tag_name }}/" "config.yaml"
 
         - name: Create Pull Request
           uses: peter-evans/create-pull-request@v5.0.0
-          if: ${{ !steps.publish.outputs.publish }}
+          if: !steps.publish.outputs.publish
           with:
             branch: releases/new-release
             delete-branch: true
