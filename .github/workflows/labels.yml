@@ -5,6 +5,7 @@
       push:
         branches:
           - main
+          - master
         paths:
           - .github/labels.yml
       schedule:

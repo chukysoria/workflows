@@ -2,7 +2,17 @@
   name: Release Drafter
   
   on:
+    push:
+      branches:
+        - main
+        - master
     workflow_call:
+      inputs:
+        config-file:
+          description: Config file path
+          default: config.yaml
+          required: false
+          type: string
   
   jobs:
     update_release_draft:
@@ -10,6 +20,8 @@
       runs-on: ubuntu-latest
       outputs:
         publish: ${{ steps.publish.outputs.publish }}
+        version: ${{ steps.drafter.outputs.tag_name }}
+        body: ${{ steps.drafter.outputs.body }}
       permissions:
         contents: write  # for release-drafter/release-drafter to create a github release
         pull-requests: write  # for release-drafter/release-drafter to read PR content and labels
@@ -19,14 +31,15 @@
           with:
             fetch-depth: 2
 
-        - uses: salsify/action-detect-and-tag-new-version@v2
+        - name: Check for new version pushed
+          uses: salsify/action-detect-and-tag-new-version@v2
           id: version
           with:
             create-tag: false
             version-command: |
-              yq e '.version' "config.yaml"
+              yq e '.version' "${{ inputs.config-file }}"
 
-        - name: Inform publish
+        - name: If new version, the publish release
           id: publish
           run: |
             echo "publish=${{ steps.version.outputs.previous-version != steps.version.outputs.current-version}}" >> $GITHUB_OUTPUT
@@ -38,24 +51,33 @@
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             publish: ${{ steps.publish.outputs.publish }}
-        
+    
+    create-pr:
+      name: Create new version Pull Request
+      needs:
+        - update_release_draft
+      runs-on: ubuntu-latest
+      if: needs.update_release_draft.outputs.publish == 'false'
+      steps:
         - name: Checkout config
           uses: actions/checkout@v4.1.0
+          with:
+            sparse-checkout: |
+              ${{ inputs.config-file }}
+            sparse-checkout-cone-mode: false
           
         - name: Update version
-          if: steps.publish.outputs.publish == 'false'
           run: |
-            sed -i "s/^version: .*/version: ${{ steps.drafter.outputs.tag_name }}/" "config.yaml"
+            sed -i "s/^version: .*/version: ${{ needs.update_release_draft.outputs.version }}/" "${{ inputs.config-file }}"
 
         - name: Create Pull Request
           uses: peter-evans/create-pull-request@v5.0.0
-          if: steps.publish.outputs.publish == 'false'
           with:
             branch: releases/new-release
             delete-branch: true
-            title: Bump to version ${{ steps.drafter.outputs.tag_name }}
-            body: ${{ steps.drafter.outputs.body }}
+            title: Bump to version ${{ needs.update_release_draft.outputs.version }}
+            body: ${{ needs.update_release_draft.outputs.body }}
             assignees: ${{ github.repository_owner }}
             labels: ci
             add-paths: |
-              config.yaml
+              ${{ inputs.config-file }}
