@@ -55,6 +55,7 @@
       runs-on: ubuntu-latest
       if: needs.update_release_draft.outputs.publish == 'false'
       permissions:
+        contents: write
         pull-requests: write
       steps:
         - name: Checkout config
