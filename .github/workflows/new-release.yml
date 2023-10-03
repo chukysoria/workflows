@@ -24,7 +24,7 @@
         body: ${{ steps.drafter.outputs.body }}
       permissions:
         contents: write  # for release-drafter/release-drafter to create a github release
-        pull-requests: write  # for release-drafter/release-drafter to read PR content and labels
+        pull-requests: read  # for release-drafter/release-drafter to read PR content and labels
       steps:
         - name: ⤵️ Check out code from GitHub
           uses: actions/checkout@v4.1.0
@@ -58,6 +58,8 @@
         - update_release_draft
       runs-on: ubuntu-latest
       if: needs.update_release_draft.outputs.publish == 'false'
+      permissions:
+        pull-requests: write
       steps:
         - name: Checkout config
           uses: actions/checkout@v4.1.0
