@@ -78,6 +78,6 @@
             title: Bump to version ${{ needs.update_release_draft.outputs.version }}
             body: ${{ needs.update_release_draft.outputs.body }}
             assignees: ${{ github.repository_owner }}
-            labels: ci
+            labels: bump-version
             add-paths: |
               ${{ inputs.config-file }}

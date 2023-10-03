@@ -32,6 +32,9 @@
 - name: "translations"
   color: d4c5f9
   description: "Impacts translations."
+- name: "bump-version"
+  description: "Updates version number to trigger a new release"
+  color: 1d76db
 
 - name: "in-progress"
   color: fbca04
