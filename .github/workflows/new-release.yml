@@ -1,5 +1,5 @@
 ---
-  name: Release Drafter
+  name: ✏️ Release Drafter
   
   on:
     workflow_call:
@@ -27,7 +27,7 @@
           with:
             fetch-depth: 2
 
-        - name: Check for new version pushed
+        - name: ℹ️ Check for new version pushed
           uses: salsify/action-detect-and-tag-new-version@v2
           id: version
           with:
@@ -35,7 +35,7 @@
             version-command: |
               yq e '.version' "${{ inputs.config-file }}"
 
-        - name: If new version, the publish release
+        - name: ℹ️ If new version, the publish release
           id: publish
           run: |
             echo "publish=${{ steps.version.outputs.previous-version != steps.version.outputs.current-version}}" >> $GITHUB_OUTPUT
@@ -49,7 +49,7 @@
             publish: ${{ steps.publish.outputs.publish }}
     
     create-pr:
-      name: Create new version Pull Request
+      name: ✏️ Create new version Pull Request
       needs:
         - update_release_draft
       runs-on: ubuntu-latest
@@ -58,18 +58,18 @@
         contents: write
         pull-requests: write
       steps:
-        - name: Checkout config
+        - name: ⤵️ Checkout config
           uses: actions/checkout@v4.1.0
           with:
             sparse-checkout: |
               ${{ inputs.config-file }}
             sparse-checkout-cone-mode: false
           
-        - name: Update version
+        - name: 🚀 Update version
           run: |
             sed -i "s/^version: .*/version: ${{ needs.update_release_draft.outputs.version }}/" "${{ inputs.config-file }}"
 
-        - name: Create Pull Request
+        - name: ✏️ Create Pull Request
           uses: peter-evans/create-pull-request@v5.0.2
           with:
             branch: releases/new-release
