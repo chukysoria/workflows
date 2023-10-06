@@ -43,7 +43,7 @@ jobs:
       ext_release: ${{ steps.basic.outputs.ext_release }}
       ext_release_clean: ${{ steps.basic.outputs.ext_release_clean }}
       architectures: ${{ steps.architectures.outputs.architectures }}   
-      version: ${{ steps.release.outputs.version }}
+      version: ${{ steps.basic.outputs.version }}
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.1.0
@@ -66,6 +66,9 @@ jobs:
 
           ext_release=$(yq --no-colors eval '.ext_release' "${{ inputs.config_path }}")
           echo "ext_release=${ext_release}" >> "$GITHUB_OUTPUT"
+
+          version=$(yq --no-colors eval '.version' "${{ inputs.config_path }}")
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
           echo "ext_release_clean=$(echo $ext_release | sed 's/[~,%@+;:/]//g')" >> "$GITHUB_OUTPUT"
   
@@ -93,14 +96,3 @@ jobs:
             )
             echo "${architecture}=${available}" >> "$GITHUB_OUTPUT"
           done   
-
-      - name: ℹ️ Gather version
-        id: release
-        run: |
-          version="${sha:0:7}"
-          if [[ "${{ github.event_name }}" = "release" ]]; then
-            version="${{ github.event.release.tag_name }}"
-            version="${version,,}"
-            version="${version#v}"
-          fi
-          echo "version=${version}" >> "$GITHUB_OUTPUT"

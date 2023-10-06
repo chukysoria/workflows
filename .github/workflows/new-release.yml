@@ -59,7 +59,7 @@
             publish: ${{ needs.check_for_new_version.outputs.publish }}
     
     check-build:
-      name: Check if a build trigger is configured
+      name: ℹ️ Check if a build trigger is configured
       needs:
         - check_for_new_version
       runs-on: ubuntu-latest
@@ -67,13 +67,16 @@
       outputs:
         build: ${{ steps.check-build-yml.outputs.build }}
       steps:
+        - name: ⤵️ Check out code from GitHub
+          uses: actions/checkout@v4.1.0
+
         - id: check-build-yml
-          name: Checks for build.yml file
+          name: ℹ️ Checks for build.yaml file
           run: |
            echo "build=$( [ -f 'build.yaml' ] && echo 'true' || echo 'false' )"  >> $GITHUB_OUTPUT
 
     publish-build:
-      name: Publish build
+      name: 🚀 Publish build
       needs:
         - check-build
       if: needs.check-build.outputs.build == 'true'
