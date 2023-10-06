@@ -11,21 +11,19 @@
           type: string
   
   jobs:
-    update_release_draft:
-      name: ✏️ Draft release
+    check_for_new_version:
+      name: ℹ️ Check for new version
       runs-on: ubuntu-latest
       outputs:
         publish: ${{ steps.publish.outputs.publish }}
-        version: ${{ steps.drafter.outputs.tag_name }}
-        body: ${{ steps.drafter.outputs.body }}
-      permissions:
-        contents: write  # for release-drafter/release-drafter to create a github release
-        pull-requests: read  # for release-drafter/release-drafter to read PR content and labels
       steps:
         - name: ⤵️ Check out code from GitHub
           uses: actions/checkout@v4.1.0
           with:
             fetch-depth: 2
+            sparse-checkout: |
+              ${{ inputs.config-file }}
+            sparse-checkout-cone-mode: false
 
         - name: ℹ️ Check for new version pushed
           uses: salsify/action-detect-and-tag-new-version@v2
@@ -39,21 +37,57 @@
           id: publish
           run: |
             echo "publish=${{ steps.version.outputs.previous-version != steps.version.outputs.current-version}}" >> $GITHUB_OUTPUT
-        
+  
+    update_release_draft:
+      name: ✏️ Draft release
+      runs-on: ubuntu-latest
+      needs:
+        - check_for_new_version
+      outputs:
+        version: ${{ steps.drafter.outputs.tag_name }}
+        body: ${{ steps.drafter.outputs.body }}
+      permissions:
+        contents: write  # for release-drafter/release-drafter to create a github release
+        pull-requests: read  # for release-drafter/release-drafter to read PR content and labels
+      steps:     
         - name: 🚀 Run Release Drafter
           uses: release-drafter/release-drafter@v5.24.0
           id: drafter
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
-            publish: ${{ steps.publish.outputs.publish }}
+            publish: ${{ needs.check_for_new_version.outputs.publish }}
     
+    check-build:
+      name: Check if a build trigger is configured
+      needs:
+        - check_for_new_version
+      runs-on: ubuntu-latest
+      if: needs.check_for_new_version.outputs.publish == 'true'
+      outputs:
+        build: ${{ steps.check-build-yml.outputs.build }}
+      steps:
+        - id: check-build-yml
+          name: Checks for build.yml file
+          run: |
+           echo "build=$( [ -f 'build.yml' ] && echo 'true' || echo 'false' )"  >> $GITHUB_OUTPUT
+
+    publish-build:
+      name: Check if a build trigger is configured
+      needs:
+        - check-build
+      if: needs.check-build.outputs.build == 'true'
+      uses: ./.github/workflows/build-image.yml
+      with:
+        publish: true
+
     create-pr:
       name: ✏️ Create new version Pull Request
       needs:
         - update_release_draft
+        - check_for_new_version
       runs-on: ubuntu-latest
-      if: needs.update_release_draft.outputs.publish == 'false'
+      if: needs.check_for_new_version.outputs.publish == 'false'
       permissions:
         contents: write
         pull-requests: write
