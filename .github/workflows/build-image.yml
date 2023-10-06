@@ -19,6 +19,11 @@ on:
         default: build.yaml
         required: false
         type: string
+      publish:
+        description: Force publish
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   information:
@@ -99,10 +104,10 @@ jobs:
           tags: |
             type=sha,suffix=-${{ matrix.architecture }}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }}-${{ matrix.architecture }},enable=${{ inputs.tag-external-version }}
+            type=semver,pattern=v{{version}},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}}.{{minor}},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }}-${{ matrix.architecture }},enable=${{ inputs.tag-external-version }},value=${{ needs.information.outputs.version }}
             type=raw,value=latest,suffix=-${{ needs.information.outputs.ext_release }}-${{ matrix.architecture }},enable=${{ inputs.tag-external-version }}
           labels: |
             org.opencontainers.image.created=${{ steps.flags.outputs.date }}
@@ -123,8 +128,8 @@ jobs:
         uses: docker/build-push-action@v5.0.0
         with:
           # Not possible to load and push at the same time
-          push: ${{ github.event_name == 'release' }}
-          load: ${{ github.event_name != 'release' }}
+          push: ${{ github.event_name == 'release' || inputs.publish }}
+          load: ${{ github.event_name != 'release' && !inputs.publish }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: |
@@ -145,21 +150,21 @@ jobs:
       # https://github.com/docker/build-push-action/issues/252
       # https://github.com/moby/buildkit/issues/1896
       - name: 🚚 Swap build cache
-        if: ${{ github.event_name != 'release' }}
+        if: ${{ github.event_name != 'release' && !inputs.publish }}
         run: |
           rm -rf /tmp/.docker-cache
           mv /tmp/.docker-cache-new /tmp/.docker-cache
 
       - name: 🏗 Save build cache
         # On release push no cache is created
-        if: ${{ github.event_name != 'release' }}
+        if: ${{ github.event_name != 'release' && !inputs.publish }}
         uses: actions/cache/save@v3.3.2
         with:
           path: /tmp/.docker-cache
           key: docker-${{ matrix.architecture }}-${{ github.sha }}
 
   confirm-build:
-    name: 👷 Build jobs for ${{ needs.information.outputs.image}} successful
+    name: 👷 Build jobs for ${{ needs.information.outputs.image }} successful
     runs-on: ubuntu-latest
     needs:
       - information
@@ -176,7 +181,7 @@ jobs:
     needs:
       - information
       - build
-    if: ${{ github.event_name == 'release' }}
+    if: ${{ github.event_name == 'release' || inputs.publish}}
     steps:
       - name: 🏗 Login to Github Container Repo
         uses: docker/login-action@v3.0.0
@@ -196,10 +201,10 @@ jobs:
           tags: |
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }}
+            type=semver,pattern=v{{version}},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}}.{{minor}},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }},value=${{ needs.information.outputs.version }}
             type=raw,value=latest,suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }}
       
       - name: ℹ️ Calculate short SHA
