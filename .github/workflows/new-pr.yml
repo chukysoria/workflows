@@ -8,4 +8,4 @@ on:
 jobs:
   update_release_draft:
     name: Release
-    uses: .github/workflows/new-release.yml
+    uses: ./.github/workflows/new-release.yml
