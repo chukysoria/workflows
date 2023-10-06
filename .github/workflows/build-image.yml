@@ -27,7 +27,7 @@ on:
 
 jobs:
   information:
-    uses: chukysoria/workflows/.github/workflows/get-info.yml@main
+    uses: ./.github/workflows/get-info.yml
 
   build:
     name: 👷 Build ${{ needs.information.outputs.image}} - ${{ matrix.architecture }}
