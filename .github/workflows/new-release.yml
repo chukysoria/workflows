@@ -70,10 +70,10 @@
         - id: check-build-yml
           name: Checks for build.yml file
           run: |
-           echo "build=$( [ -f 'build.yml' ] && echo 'true' || echo 'false' )"  >> $GITHUB_OUTPUT
+           echo "build=$( [ -f 'build.yaml' ] && echo 'true' || echo 'false' )"  >> $GITHUB_OUTPUT
 
     publish-build:
-      name: Check if a build trigger is configured
+      name: Publish build
       needs:
         - check-build
       if: needs.check-build.outputs.build == 'true'
