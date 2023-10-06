@@ -105,7 +105,7 @@ jobs:
             type=sha,suffix=-${{ matrix.architecture }}
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern=v{{version}},value=${{ needs.information.outputs.version }}
-            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(needs.information.outputs.version, 'v0.') }},value=${{ needs.information.outputs.version }}
             type=semver,pattern=v{{major}}.{{minor}},value=${{ needs.information.outputs.version }}
             type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }}-${{ matrix.architecture }},enable=${{ inputs.tag-external-version }},value=${{ needs.information.outputs.version }}
             type=raw,value=latest,suffix=-${{ needs.information.outputs.ext_release }}-${{ matrix.architecture }},enable=${{ inputs.tag-external-version }}
@@ -202,7 +202,7 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern=v{{version}},value=${{ needs.information.outputs.version }}
-            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith( needs.information.outputs.version, 'v0.') }},value=${{ needs.information.outputs.version }}
             type=semver,pattern=v{{major}}.{{minor}},value=${{ needs.information.outputs.version }}
             type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }},value=${{ needs.information.outputs.version }}
             type=raw,value=latest,suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }}
@@ -214,7 +214,7 @@ jobs:
       - name: 🚀 Calculate source images and output tags
         id: source
         run: |
-          images=$(echo '${{ needs.information.outputs.architectures }}' | jq -c -r 'map("ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}:\(.)-${{ steps.short-sha.outputs.sha }}") |  join(",")')
+          images=$(echo '${{ needs.information.outputs.architectures }}' | jq -c -r 'map("ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}:sha-${{ steps.short-sha.outputs.sha }}-\(.)") |  join(",")')
           echo "images=$images" >> $GITHUB_OUTPUT
           tags=$(echo '${{ steps.meta.outputs.tags }}' | paste -sd,)
           echo "tags=$tags" >> $GITHUB_OUTPUT
