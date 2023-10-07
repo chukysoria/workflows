@@ -9,7 +9,12 @@
           default: config.yaml
           required: false
           type: string
-  
+        tag-external-version:
+          description: Include tag for the external version of the app
+          default: false
+          required: false
+          type: boolean
+
   jobs:
     check_for_new_version:
       name: ℹ️ Check for new version
@@ -83,6 +88,7 @@
       uses: ./.github/workflows/build-image.yml
       with:
         publish: true
+        tag-external-version: ${{ inputs.tag-external-version }}
 
     create-pr:
       name: ✏️ Create new version Pull Request
