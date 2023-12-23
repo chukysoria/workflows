@@ -14,6 +14,19 @@
           default: false
           required: false
           type: boolean
+        prerelease:
+          description: Flag as a pre release version
+          default: false
+          required: false
+          type: boolean
+        prerelease-identifier:
+          description: A string indicating an identifier (alpha, beta, rc, etc), to increment the prerelease version. number
+          default: dev
+          required: false
+          type: string
+  
+  env:
+    BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
 
   jobs:
     check_for_new_version:
@@ -62,6 +75,8 @@
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             publish: ${{ needs.check_for_new_version.outputs.publish }}
+            prerelease: ${{ inputs.prerelease }}
+            prerelease-identifier: ${{ inputs.prerelease-identifier }}
     
     check-build:
       name: ℹ️ Check if a build trigger is configured
@@ -115,7 +130,7 @@
         - name: ✏️ Create Pull Request
           uses: peter-evans/create-pull-request@v5.0.2
           with:
-            branch: releases/new-release
+            branch: releases/new-release-${{ env.BRANCH_NAME }}
             delete-branch: true
             title: Bump to version ${{ needs.update_release_draft.outputs.version }}
             body: ${{ needs.update_release_draft.outputs.body }}
