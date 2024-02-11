@@ -93,7 +93,7 @@ jobs:
 
       - name: 🚀 Calculate image labels and tags
         id: meta
-        uses: docker/metadata-action@v5.5.0
+        uses: docker/metadata-action@v5.5.1
         with:
           # list of Docker images to use as base name for tags
           images: |
@@ -192,7 +192,7 @@ jobs:
 
       - name: 🚀 Calculate manifest image labels and tags
         id: meta
-        uses: docker/metadata-action@v5.5.0
+        uses: docker/metadata-action@v5.5.1
         with:
           # list of Docker images to use as base name for tags
           images: |
