@@ -40,7 +40,7 @@ jobs:
       build_date: ${{ steps.flags.outputs.date }}
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
         with:
           sparse-checkout: ${{ inputs.build_path }}
           sparse-checkout-cone-mode: false
