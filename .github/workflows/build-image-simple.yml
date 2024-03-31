@@ -1,0 +1,139 @@
+name: build-image
+run-name: Building image of ${{ github.repository }}
+
+on:
+  workflow_call: 
+    inputs:
+      tag-external-version:
+        description: Include tag for the external version of the app
+        default: false
+        required: false
+        type: boolean
+      config_path:
+        description: Location of the config file
+        default: config.yaml
+        required: false
+        type: string
+      publish:
+        description: Force publish
+        default: false
+        required: false
+        type: boolean
+
+jobs:
+  information:
+    uses: ./.github/workflows/get-info.yml
+
+  build:
+    name: 👷 Build ${{ needs.information.outputs.image}}
+    needs: information
+    runs-on: ubuntu-latest
+    outputs:
+      build_date: ${{ steps.flags.outputs.date }}
+    steps:
+      - name: ℹ️ Compose build flags
+        id: flags
+        run: |
+          echo "date=$(date +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+
+      - name: 🏗 Restore build cache
+        id: cache
+        uses: actions/cache/restore@v4.0.1
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ github.sha }}
+          restore-keys: |
+            docker
+
+      - name: 🏗 Set up QEMU
+        uses: docker/setup-qemu-action@v3.0.0
+
+      - name: 🏗 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.2.0
+
+      - name: 🏗 Login to Github Container Repo
+        uses: docker/login-action@v3.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Calculate image labels and tags
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+             ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}            
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern=v{{version}},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(needs.information.outputs.version, 'v0.') }},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{major}}.{{minor}},value=${{ needs.information.outputs.version }}
+            type=semver,pattern=v{{version}},suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }},value=${{ needs.information.outputs.version }}
+            type=raw,value=latest,suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.flags.outputs.date }}
+            org.opencontainers.image.authors=Chukysoria
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}/packages
+            org.opencontainers.image.documentation=https://docs.linuxserver.io/images/docker-${{ needs.information.outputs.image }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.information.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.vendor=Chukysoria
+            org.opencontainers.image.licenses=GPL-3.0-only
+            org.opencontainers.image.ref.name=${{ github.sha }}
+            org.opencontainers.image.title=${{ needs.information.outputs.name }}
+            org.opencontainers.image.description=${{ needs.information.outputs.description }} 
+
+      - name: 🚀 Build and push
+        id: build-and-push
+        uses: docker/build-push-action@v5.3.0
+        with:
+          # Not possible to load and push at the same time
+          push: ${{ github.event_name == 'release' || inputs.publish }}
+          load: ${{ github.event_name != 'release' && !inputs.publish }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=local,src=/tmp/.docker-cache
+            ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}
+          cache-to: type=local,mode=max,dest=/tmp/.docker-cache-new          
+          platforms: ${{ steps.flags.outputs.platform }}
+          provenance: false
+          build-args: |
+            BUILD_DATE=${{ steps.flags.outputs.date }}
+            BUILD_EXT_RELEASE=${{ needs.information.outputs.ext_release }}
+            BUILD_VERSION=${{ needs.information.outputs.version }}
+
+      # This ugly bit is necessary, or our cache will grow forever...
+      # Well until we hit GitHub's limit of 5GB :)
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      - name: 🚚 Swap build cache
+        if: ${{ github.event_name != 'release' && !inputs.publish }}
+        run: |
+          rm -rf /tmp/.docker-cache
+          mv /tmp/.docker-cache-new /tmp/.docker-cache
+
+      - name: 🏗 Save build cache
+        # On release push no cache is created
+        if: ${{ github.event_name != 'release' && !inputs.publish }}
+        uses: actions/cache/save@v4.0.1
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ github.sha }}
+
+  confirm-build:
+    name: 👷 Build jobs for ${{ needs.information.outputs.image }} successful
+    runs-on: ubuntu-latest
+    needs:
+      - information
+      - build
+    steps:
+      - name: ℹ️ Report images built
+        id: report
+        run: |
+          echo "Succesfully built ${{ needs.information.outputs.image }}" >> $GITHUB_STEP_SUMMARY
