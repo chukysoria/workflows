@@ -24,6 +24,11 @@
           default: dev
           required: false
           type: string
+        simple-build:
+          description: Set it true if there's no architectures
+          default: false
+          required: false
+          type: boolean
   
   env:
     BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
@@ -99,8 +104,18 @@
       name: 🚀 Publish build
       needs:
         - check-build
-      if: needs.check-build.outputs.build == 'true'
+      if: needs.check-build.outputs.build == 'true' && inputs.simple-build == 'false'
       uses: ./.github/workflows/build-image.yml
+      with:
+        publish: true
+        tag-external-version: ${{ inputs.tag-external-version }}
+
+    publish-build-simple:
+      name: 🚀 Publish simple build
+      needs:
+        - check-build
+      if: needs.check-build.outputs.build == 'true' && inputs.simple-build == 'true'
+      uses: ./.github/workflows/build-image-simple.yml
       with:
         publish: true
         tag-external-version: ${{ inputs.tag-external-version }}
