@@ -38,7 +38,7 @@ jobs:
 
       - name: 🏗 Restore build cache
         id: cache
-        uses: actions/cache/restore@v4.0.1
+        uses: actions/cache/restore@v4.0.2
         with:
           path: /tmp/.docker-cache
           key: docker-${{ github.sha }}
@@ -121,7 +121,7 @@ jobs:
       - name: 🏗 Save build cache
         # On release push no cache is created
         if: ${{ github.event_name != 'release' && !inputs.publish }}
-        uses: actions/cache/save@v4.0.1
+        uses: actions/cache/save@v4.0.2
         with:
           path: /tmp/.docker-cache
           key: docker-${{ github.sha }}
