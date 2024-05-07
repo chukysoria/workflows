@@ -220,7 +220,7 @@ jobs:
           echo "tags=$tags" >> $GITHUB_OUTPUT
 
       - name: 🚀 Create and push manifest images
-        uses: Noelware/docker-manifest-action@0.4.1
+        uses: Noelware/docker-manifest-action@0.4.2
         with:
             inputs: ${{ steps.source.outputs.tags }}
             images: ${{ steps.source.outputs.images }}
