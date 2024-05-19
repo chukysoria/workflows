@@ -41,7 +41,7 @@
         publish: ${{ steps.publish.outputs.publish }}
       steps:
         - name: ⤵️ Check out code from GitHub
-          uses: actions/checkout@v4.1.1
+          uses: actions/checkout@v4.1.6
           with:
             fetch-depth: 2
             sparse-checkout: |
@@ -93,7 +93,7 @@
         build: ${{ steps.check-build-yml.outputs.build }}
       steps:
         - name: ⤵️ Check out code from GitHub
-          uses: actions/checkout@v4.1.1
+          uses: actions/checkout@v4.1.6
 
         - id: check-build-yml
           name: ℹ️ Checks for build.yaml file
@@ -132,7 +132,7 @@
         pull-requests: write
       steps:
         - name: ⤵️ Checkout config
-          uses: actions/checkout@v4.1.1
+          uses: actions/checkout@v4.1.6
           with:
             sparse-checkout: |
               ${{ inputs.config-file }}
