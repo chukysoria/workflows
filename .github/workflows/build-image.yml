@@ -85,7 +85,7 @@ jobs:
           platforms: ${{ steps.flags.outputs.platform }}
 
       - name: 🏗 Login to Github Container Repo
-        uses: docker/login-action@v3.1.0
+        uses: docker/login-action@v3.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -184,7 +184,7 @@ jobs:
     if: ${{ github.event_name == 'release' || inputs.publish}}
     steps:
       - name: 🏗 Login to Github Container Repo
-        uses: docker/login-action@v3.1.0
+        uses: docker/login-action@v3.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
