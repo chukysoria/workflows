@@ -39,6 +39,7 @@
       runs-on: ubuntu-latest
       outputs:
         publish: ${{ steps.publish.outputs.publish }}
+        new-version: ${{ steps.version.outputs.current-version }}
       steps:
         - name: ⤵️ Check out code from GitHub
           uses: actions/checkout@v4.1.6
@@ -73,16 +74,28 @@
         contents: write  # for release-drafter/release-drafter to create a github release
         pull-requests: read  # for release-drafter/release-drafter to read PR content and labels
       steps:     
-        - name: 🚀 Run Release Drafter
+        - name: 🚀 Publish Release
           uses: release-drafter/release-drafter@v6.0.0
-          id: drafter
+          id: release-publish
+          if: needs.check_for_new_version.outputs.publish == 'true'
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             publish: ${{ needs.check_for_new_version.outputs.publish }}
             prerelease: ${{ inputs.prerelease }}
             prerelease-identifier: ${{ inputs.prerelease-identifier }}
-    
+            version: ${{ needs.check_for_new_version.outputs.new-version }}
+        - name: 🚀 Run Release Drafter
+          uses: release-drafter/release-drafter@v6.0.0
+          id: drafter
+          if: needs.check_for_new_version.outputs.publish == 'false'
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            publish: ${{ needs.check_for_new_version.outputs.publish }}
+            prerelease: ${{ inputs.prerelease }}
+            prerelease-identifier: ${{ inputs.prerelease-identifier }}
+
     check-build:
       name: ℹ️ Check if a build trigger is configured
       needs:
