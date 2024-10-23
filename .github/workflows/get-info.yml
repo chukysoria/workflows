@@ -46,7 +46,7 @@ jobs:
       version: ${{ steps.basic.outputs.version }}
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.2
         with:
           sparse-checkout: ${{ inputs.config_path }}
           sparse-checkout-cone-mode: false
