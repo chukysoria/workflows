@@ -214,14 +214,14 @@ jobs:
       - name: 🚀 Calculate source images and output tags
         id: source
         run: |
-          images=$(echo '${{ needs.information.outputs.architectures }}' | jq -c -r 'map("ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}:sha-${{ steps.short-sha.outputs.sha }}-\(.)") |  join(",")')
-          echo "images=$images" >> $GITHUB_OUTPUT
-          tags=$(echo '${{ steps.meta.outputs.tags }}' | paste -sd,)
+          tags=$(echo '${{ needs.information.outputs.architectures }}' | jq -c -r 'map("ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.image }}:sha-${{ steps.short-sha.outputs.sha }}-\(.)") |  join(",")')
           echo "tags=$tags" >> $GITHUB_OUTPUT
+          inputs=$(echo '${{ steps.meta.outputs.tags }}' | paste -sd,)
+          echo "inputs=$inputs" >> $GITHUB_OUTPUT
 
       - name: 🚀 Create and push manifest images
         uses: Noelware/docker-manifest-action@65660a0ebf876a67d8374f1ff4c3ae5b7a3aeb50 # 1.0.0
         with:
-            inputs: ${{ steps.source.outputs.tags }}
-            images: ${{ steps.source.outputs.images }}
+            inputs: ${{ steps.source.outputs.inputs }}
+            tags: ${{ steps.source.outputs.tags }}
             push: true
