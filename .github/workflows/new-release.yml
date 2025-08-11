@@ -42,7 +42,7 @@
         new-version: ${{ steps.version.outputs.current-version }}
       steps:
         - name: ⤵️ Check out code from GitHub
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+          uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
           with:
             fetch-depth: 2
             sparse-checkout: |
@@ -106,7 +106,7 @@
         build: ${{ steps.check-build-yml.outputs.build }}
       steps:
         - name: ⤵️ Check out code from GitHub
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+          uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
         - id: check-build-yml
           name: ℹ️ Checks for build.yaml file
@@ -145,7 +145,7 @@
         pull-requests: write
       steps:
         - name: ⤵️ Checkout config
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+          uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
           with:
             sparse-checkout: |
               ${{ inputs.config-file }}
