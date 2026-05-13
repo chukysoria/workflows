@@ -208,7 +208,7 @@ jobs:
             type=raw,value=latest,suffix=-${{ needs.information.outputs.ext_release }},enable=${{ inputs.tag-external-version }}
       
       - name: ℹ️ Calculate short SHA
-        uses: benjlevesque/short-sha@599815c8ee942a9616c92bcfb4f947a3b670ab0b # v3.0
+        uses: benjlevesque/short-sha@dbe07338b37c456ce06d23409b35a56a7815eef4 # v4.0
         id: short-sha 
            
       - name: 🚀 Calculate source images and output tags
