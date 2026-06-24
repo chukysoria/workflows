@@ -75,7 +75,7 @@
         pull-requests: read  # for release-drafter/release-drafter to read PR content and labels
       steps:     
         - name: 🚀 Publish Release
-          uses: release-drafter/release-drafter@c2e2804cc59f45f57076a99af580d0fedb697927 # v7.3.0
+          uses: release-drafter/release-drafter@ed4bc48ec97379be2258e7b7ac2624a3e26ab809 # v7.4.0
           id: release-publish
           if: needs.check_for_new_version.outputs.publish == 'true'
           env:
@@ -86,7 +86,7 @@
             prerelease-identifier: ${{ inputs.prerelease-identifier }}
             version: ${{ needs.check_for_new_version.outputs.new-version }}
         - name: 🚀 Run Release Drafter
-          uses: release-drafter/release-drafter@c2e2804cc59f45f57076a99af580d0fedb697927 # v7.3.0
+          uses: release-drafter/release-drafter@ed4bc48ec97379be2258e7b7ac2624a3e26ab809 # v7.4.0
           id: drafter
           if: needs.check_for_new_version.outputs.publish == 'false'
           env:
