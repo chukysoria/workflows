@@ -21,7 +21,7 @@
           type: boolean
         prerelease-identifier:
           description: A string indicating an identifier (alpha, beta, rc, etc), to increment the prerelease version. number
-          default: dev
+          default: ''
           required: false
           type: string
         simple-build:
@@ -49,13 +49,21 @@
               ${{ inputs.config-file }}
             sparse-checkout-cone-mode: false
 
-        - name: ℹ️ Check for new version pushed
-          uses: salsify/action-detect-and-tag-new-version@v2
+        - name: ℹ️ Read current and previous version
           id: version
-          with:
-            create-tag: false
-            version-command: |
-              yq e '.version' "${{ inputs.config-file }}"
+          shell: bash
+          run: |
+            current_version="$(yq e '.version' "${{ inputs.config-file }}")"
+
+            if git cat-file -e HEAD^:"${{ inputs.config-file }}" 2>/dev/null; then
+              previous_version="$(git show HEAD^:"${{ inputs.config-file }}" | yq e '.version' -)"
+            else
+              previous_version=""
+            fi
+
+            echo "current-version=$current_version" >> "$GITHUB_OUTPUT"
+            echo "previous-version=$previous_version" >> "$GITHUB_OUTPUT"
+
 
         - name: ℹ️ If new version, the publish release
           id: publish
