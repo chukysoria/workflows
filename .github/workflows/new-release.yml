@@ -93,6 +93,19 @@
             prerelease: ${{ inputs.prerelease }}
             prerelease-identifier: ${{ inputs.prerelease-identifier }}
             version: ${{ needs.check_for_new_version.outputs.new-version }}
+        - name: 🧹 Delete unused draft releases
+          if: needs.check_for_new_version.outputs.publish == 'true'
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GH_REPO: ${{ github.repository }}
+            RELEASE_TAG: ${{ needs.check_for_new_version.outputs.new-version }}
+          run: |
+            echo "Deleting draft releases except $RELEASE_TAG"
+            gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft == true and .tagName != env.RELEASE_TAG) | .tagName' | while read -r draft_tag; do
+              [ -n "$draft_tag" ] || continue
+              echo "Deleting draft release $draft_tag"
+              gh release delete "$draft_tag" --yes
+            done
         - name: 🚀 Run Release Drafter
           uses: release-drafter/release-drafter@4d75298e00d9e34c483e5ff8c68d0ea1c1940c1e # v7.5.1
           id: drafter
