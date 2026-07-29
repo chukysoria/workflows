@@ -83,7 +83,7 @@
         pull-requests: read  # for release-drafter/release-drafter to read PR content and labels
       steps:     
         - name: 🚀 Publish Release
-          uses: release-drafter/release-drafter@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
+          uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
           id: release-publish
           if: needs.check_for_new_version.outputs.publish == 'true'
           env:
@@ -107,7 +107,7 @@
               gh release delete "$draft_tag" --yes
             done
         - name: 🚀 Run Release Drafter
-          uses: release-drafter/release-drafter@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
+          uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
           id: drafter
           if: needs.check_for_new_version.outputs.publish == 'false'
           env:
